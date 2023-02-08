@@ -144,6 +144,11 @@ class Video extends Rect {
 
 	draw(context) {
 		if (this.isLoaded)
+			context.save();
+
+			context.translate(this.pos.x + (this.bounds.x/2), this.pos.y + (this.bounds.y / 2));
+			context.rotate(45);
+			
 			context.drawImage(
 				this.video,
 				this.pos.x,
@@ -151,6 +156,10 @@ class Video extends Rect {
 				this.bounds.width,
 				this.bounds.height
 			);
+			
+			context.rotate(-45);
+
+			context.restore();
 	}
 
 	isColliding(pos) {
