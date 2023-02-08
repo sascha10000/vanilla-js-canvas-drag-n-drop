@@ -5,6 +5,12 @@ window.onload = (ev) => {
 	const drawables = [
 		new Rect({ x: 10, y: 10 }, { width: 1, height: 1 }, 0xff0000),
 		new Rect({ x: 30, y: 80 }, { width: 80, height: 40 }, 0xf0f0f),
+		new Video(
+			{ x: 1, y: 1 },
+			{ width: 50, height: 50 },
+			0xffffff,
+			"https://upload.wikimedia.org/wikipedia/commons/transcoded/c/c4/Physicsworks.ogv/Physicsworks.ogv.240p.vp9.webm"
+		),
 	];
 	console.log(canvas.offsetLeft, canvas.clientLeft);
 	const dragMan = new DragManager();
@@ -35,13 +41,20 @@ const getMousePos = (mouseEvent) => {
 };
 
 const draw = (ctx, drawables) => {
-	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	const cctx = ctx;
+	const cdrawables = drawables;
 
-	drawables.forEach((element) => {
-		element.draw(ctx);
-	});
+	const cdraw = () => {
+		cctx.clearRect(0, 0, canvas.width, canvas.height);
 
-	setTimeout(draw, 100, ctx, drawables);
+		cdrawables.forEach((element) => {
+			element.draw(cctx);
+		});
+
+		requestAnimationFrame(cdraw);
+	};
+
+	return cdraw();
 };
 
 const checkCollision = (drawables, mousePos) => {
@@ -113,6 +126,45 @@ class Rect extends Drawable {
 	}
 }
 
+class Video extends Rect {
+	video;
+	isLoaded;
+
+	constructor(pos, bounds, loadingColor, src) {
+		super(pos, bounds, loadingColor);
+
+		this.video = document.createElement("video");
+		this.video.src = src;
+		this.video.controls = true;
+		this.video.addEventListener("loadeddata", () => {
+			//this.video.play();  // start playing
+			this.isLoaded = true;
+		});
+	}
+
+	draw(context) {
+		if (this.isLoaded)
+			context.drawImage(
+				this.video,
+				this.pos.x,
+				this.pos.y,
+				this.bounds.width,
+				this.bounds.height
+			);
+	}
+
+	isColliding(pos) {
+		const res = super.isColliding(pos);
+		
+		if(this.video.paused || this.video.ended) {
+			this.video.play();
+		}
+		else this.video.pause();
+
+		return res;
+	}
+}
+
 class DragManager {
 	draggedElement = undefined;
 	dragOffset = undefined;
@@ -123,9 +175,9 @@ class DragManager {
 
 		this.draggedElement = element;
 		this.dragOffset = {
-            x: this.draggedElement.pos.x - mousePos.x,
-            y: this.draggedElement.pos.y - mousePos.y
-        }
+			x: this.draggedElement.pos.x - mousePos.x,
+			y: this.draggedElement.pos.y - mousePos.y,
+		};
 	}
 
 	drop() {
@@ -137,9 +189,9 @@ class DragManager {
 		if (this.draggedElement == undefined) return;
 
 		this.draggedElement.pos = {
-            x: toMousePos.x + this.dragOffset.x,
-            y: toMousePos.y + this.dragOffset.y
-        };
+			x: toMousePos.x + this.dragOffset.x,
+			y: toMousePos.y + this.dragOffset.y,
+		};
 	}
 
 	isDragging() {
